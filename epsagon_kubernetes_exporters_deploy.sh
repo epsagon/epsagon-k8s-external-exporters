@@ -23,6 +23,30 @@ function does_config_file_exist {
     return 1
 }
 
+function fetch_exporter {
+    EXPORTER_FILE=$1
+    EXPORTER_URL=https://raw.githubusercontent.com/epsagon/epsagon-k8s-external-exporters/master/${EXPORTER_FILE}
+    echo "Fetching ${EXPORTER_FILE}"
+    if [ -f $EXPORTER_FILE ] ; then
+        echo "${EXPORTER_FILE} already exists - using that file"
+        return 0
+    fi
+    if [ `which wget` ] ; then
+        wget -O ${EXPORTER_FILE} $EXPORTER_URL
+    else
+        if [ `which curl` ] ; then
+            curl $EXPORTER_URL -o ${EXPORTER_FILE}
+        else
+            if [ -s ${EXPORTER_FILE} ] ; then
+                echo "Could not get ${EXPORTER_FILE}"
+                echo "Please download the exporter from:"
+                echo $EXPORTER_URL
+                exit 1
+            fi
+        fi
+    fi
+}
+
 function install_exporter {
     CONTEXT=$1
     CONFIG=$2
@@ -40,14 +64,18 @@ function apply_celery_exporter {
     echo "redis: redis://redis:6379/"
     echo "URL:"
     read broker_url
-    cat external-metrics-exporters/celery-exporter.yaml | sed -e "s|\${CELERY_BROKER_URL}|${broker_url}|g" > celery_exporter.yaml
+    exporter_file=external-metrics-exporters/celery-exporter.yaml
+    fetch_exporter ${exporter_file}
+    cat ${exporter_file} | sed -e "s|\${CELERY_BROKER_URL}|${broker_url}|g" > celery_exporter.yaml
     install_exporter $CONTEXT $CONFIG "celery_exporter.yaml"
 }
 
 function apply_node_exporter {
     CONTEXT=$1
     CONFIG=$2
-    cp external-metrics-exporters/node-exporter.yaml ./node_exporter.yaml
+    exporter_file=external-metrics-exporters/node-exporter.yaml
+    fetch_exporter ${exporter_file}
+    cp ${exporter_file} ./node_exporter.yaml
     install_exporter $CONTEXT $CONFIG "node_exporter.yaml"
 }
 
