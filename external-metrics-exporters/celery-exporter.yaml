@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: epsagon-monitoring
+  labels:
+    name: epsagon-monitoring
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-exporter
+  namespace: epsagon-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      exporter: celery-exporter
+      app: taskQueue
+  template:
+    metadata:
+      labels:
+        exporter: celery-exporter
+        app: taskQueue
+    spec:
+      containers:
+        - name: celery-exporter
+          image: ovalmoney/celery-exporter
+          args:
+            - "--broker-url=${CELERY_BROKER_URL}"
+            - "--enable-events"
+          ports:
+            - containerPort: 9540
