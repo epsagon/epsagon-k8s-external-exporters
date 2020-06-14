@@ -26,10 +26,14 @@ function does_config_file_exist {
 function fetch_exporter {
     EXPORTER_FILE=$1
     EXPORTER_URL=https://raw.githubusercontent.com/epsagon/epsagon-k8s-external-exporters/master/${EXPORTER_FILE}
+    EXPORTER_DIR=$(dirname $EXPORTER_FILE)
     echo "Fetching ${EXPORTER_FILE}"
     if [ -f $EXPORTER_FILE ] ; then
         echo "${EXPORTER_FILE} already exists - using that file"
         return 0
+    fi
+    if [ ! -d $EXPORTER_DIR ] ; then
+        mkdir $EXPORTER_DIR
     fi
     if [ `which wget` ] ; then
         wget -O ${EXPORTER_FILE} $EXPORTER_URL
